@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ระบบจัดการเคสซ่อมบำรุง (สำหรับช่าง/ผู้ดูแล) | Hospital Maintenance Admin</title>
+  
+  <!-- Fonts: IBM Plex Sans Thai & Prompt -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="frontend/css/style.css">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"IBM Plex Sans Thai"', 'sans-serif'],
+            display: ['"Prompt"', 'sans-serif'],
+          },
+          colors: {
+            hospital: {
+              50: '#F0F9FF',
+              100: '#E0F2FE',
+              200: '#BAE6FD',
+              500: '#0284C7',
+              600: '#0369A1',
+              700: '#075985',
+              800: '#0C4A6E',
+              900: '#0B2C4D',
+            },
+            tealMed: {
+              500: '#0D9488',
+              600: '#0F766E'
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- TOP HEADER -->
+  <header class="bg-gradient-to-r from-hospital-900 via-hospital-800 to-slate-900 text-white shadow-lg sticky top-0 z-40 border-b border-white/10">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-teal-500/20 backdrop-blur border border-teal-400/30 flex items-center justify-center text-teal-300">
+          <i data-lucide="wrench" class="w-5 h-5 stroke-[2.2]"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-display font-semibold text-lg leading-tight tracking-tight">ระบบบริหารจัดการเคสซ่อม (หลังบ้านช่าง)</h1>
+            <span class="text-[10px] bg-sky-500/30 text-sky-200 border border-sky-400/30 px-2 py-0.5 rounded-full font-mono">ADMIN / TECH</span>
+          </div>
+          <p class="text-xs text-slate-400">Hospital Engineering & Clinical Maintenance Portal</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center space-x-2">
+        <!-- Switch to Frontend User View -->
+        <a href="index.html" class="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-sky-200 hover:text-white transition text-xs font-medium flex items-center gap-1.5 border border-white/10">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>ไปหน้าแจ้งซ่อม (หน้าบ้าน)</span>
+        </a>
+
+        <!-- Config API -->
+        <button onclick="toggleConfigModal()" title="ตั้งค่า API Webhook" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 transition text-xs">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Change PIN -->
+        <button onclick="changePinPrompt()" title="เปลี่ยนรหัส PIN" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 transition text-xs">
+          <i data-lucide="key" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Logout -->
+        <button onclick="logoutAdmin()" title="ออกจากระบบช่าง" class="p-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 transition text-xs">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN ADMIN CONTENT -->
+  <main id="adminMainContent" class="flex-grow max-w-7xl w-full mx-auto p-4 md:p-6 space-y-5 transition-opacity duration-300">
+
+    <!-- KPI STATS OVERVIEW -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      
+      <!-- Total -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-sky-100 text-sky-600 flex-shrink-0">
+          <i data-lucide="layers" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 font-medium">เคสทั้งหมด</div>
+          <div class="text-2xl font-bold font-mono text-slate-800" id="stat-total">0</div>
+        </div>
+      </div>
+
+      <!-- Emergency Critical -->
+      <div class="bg-white p-4 rounded-2xl border border-rose-200 shadow-sm flex items-center gap-3 bg-rose-50/20">
+        <div class="p-2.5 rounded-xl bg-rose-100 text-rose-600 flex-shrink-0">
+          <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs text-rose-700 font-medium">ฉุกเฉินวิกฤต (ค้าง)</div>
+          <div class="text-2xl font-bold font-mono text-rose-600" id="stat-emergency">0</div>
+        </div>
+      </div>
+
+      <!-- Pending -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-amber-100 text-amber-600 flex-shrink-0">
+          <i data-lucide="clock" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 font-medium">รอดำเนินการ</div>
+          <div class="text-2xl font-bold font-mono text-amber-600" id="stat-pending">0</div>
+        </div>
+      </div>
+
+      <!-- In Progress / Spare Parts -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-indigo-100 text-indigo-600 flex-shrink-0">
+          <i data-lucide="wrench" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 font-medium">กำลังซ่อม/รออะไหล่</div>
+          <div class="text-2xl font-bold font-mono text-indigo-600" id="stat-progress">0</div>
+        </div>
+      </div>
+
+      <!-- Completed -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-3">
+        <div class="p-2.5 rounded-xl bg-emerald-100 text-emerald-600 flex-shrink-0">
+          <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-xs text-slate-500 font-medium">ซ่อมเสร็จสิ้น</div>
+          <div class="text-2xl font-bold font-mono text-emerald-600" id="stat-completed">0</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FILTER & ACTION TOOLBAR CARD -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-4 md:p-5 space-y-4">
+      
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <!-- Search Input -->
+        <div class="relative flex-1 max-w-lg">
+          <input type="text" id="adminSearchInput" oninput="handleSearchInput()" placeholder="ค้นหาเลขใบงาน, แผนก, จุดที่ตั้ง, ผู้แจ้ง, หรืออาการ..." class="w-full h-11 pl-10 pr-4 text-xs border border-slate-300 rounded-xl focus:outline-none focus:border-hospital-500 focus:ring-2 focus:ring-hospital-500/20">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button onclick="exportToCSV()" class="h-10 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            ส่งออก Excel/CSV
+          </button>
+          <button onclick="resetSampleData()" class="h-10 px-3 bg-sky-50 text-sky-700 hover:bg-sky-100 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            เติมข้อมูลตัวอย่าง รพ.
+          </button>
+          <button onclick="resetAdminFilters()" class="h-10 px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-xl flex items-center gap-1 transition">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+            ล้างตัวกรอง
+          </button>
+        </div>
+      </div>
+
+      <!-- Filters Row -->
+      <div class="pt-3 border-t border-slate-100 flex flex-col md:flex-row gap-3 md:items-center justify-between text-xs">
+        
+        <!-- Category Filter -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-slate-400 font-medium mr-1">หมวดหมู่:</span>
+          <button data-category="all" onclick="setCategoryFilter('all')" class="filter-cat-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-hospital-600 text-white shadow-sm transition">ทั้งหมด</button>
+          <button data-category="เครื่องมือแพทย์" onclick="setCategoryFilter('เครื่องมือแพทย์')" class="filter-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🩺 เครื่องมือแพทย์</button>
+          <button data-category="อาคาร" onclick="setCategoryFilter('อาคาร')" class="filter-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🏢 ระบบอาคาร/แอร์/ไฟ</button>
+          <button data-category="IT" onclick="setCategoryFilter('IT')" class="filter-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">💻 ไอที/คอมพิวเตอร์</button>
+          <button data-category="ครุภัณฑ์" onclick="setCategoryFilter('ครุภัณฑ์')" class="filter-cat-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🪑 ครุภัณฑ์ทั่วไป</button>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-slate-400 font-medium mr-1">สถานะ:</span>
+          <button data-status="all" onclick="setStatusFilter('all')" class="filter-status-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-hospital-600 text-white shadow-sm transition">ทุกสถานะ</button>
+          <button data-status="รอดำเนินการ" onclick="setStatusFilter('รอดำเนินการ')" class="filter-status-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🟡 รอดำเนินการ</button>
+          <button data-status="progress" onclick="setStatusFilter('progress')" class="filter-status-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🔵 กำลังซ่อม</button>
+          <button data-status="ซ่อมเสร็จสิ้น" onclick="setStatusFilter('ซ่อมเสร็จสิ้น')" class="filter-status-btn px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-600 transition">🟢 เสร็จสิ้น</button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TABLE OF CASES -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200 tracking-wider">
+              <th class="py-3.5 px-3">เลขที่ใบงาน / เวลาแจ้ง</th>
+              <th class="py-3.5 px-3">แผนก / จุดที่ตั้ง</th>
+              <th class="py-3.5 px-3">หมวดหมู่ & อาการเสีย</th>
+              <th class="py-3.5 px-3">ความเร่งด่วน</th>
+              <th class="py-3.5 px-3">ผู้แจ้ง & เบอร์ติดต่อ</th>
+              <th class="py-3.5 px-3">สถานะปัจจุบัน</th>
+              <th class="py-3.5 px-3 text-center">จัดการเคส</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyTableState" class="hidden py-12 text-center">
+        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+          <i data-lucide="check-circle" class="w-6 h-6"></i>
+        </div>
+        <h4 class="font-display font-semibold text-slate-700 text-sm">ไม่พบรายการตามตัวกรองที่เลือก</h4>
+        <p class="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหา หรือกด "ล้างตัวกรอง" เพื่อดูรายการทั้งหมด</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============================================== -->
+  <!-- MODAL: เข้าสู่ระบบช่าง (PIN Authentication) -->
+  <!-- ============================================== -->
+  <div id="authModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full shadow-2xl border border-slate-200 overflow-hidden p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-sky-100 text-hospital-600 flex items-center justify-center mx-auto shadow-inner">
+        <i data-lucide="lock" class="w-7 h-7"></i>
+      </div>
+      <div>
+        <h3 class="font-display font-bold text-lg text-slate-800">เข้าสู่ระบบหลังบ้านช่าง</h3>
+        <p class="text-xs text-slate-500 mt-1">กรุณากรอกรหัส PIN ช่าง/ผู้ดูแลระบบ เพื่อดูเคสและอัปเดตงาน</p>
+        <p class="text-[11px] text-sky-600 bg-sky-50 rounded-lg py-1 mt-2 font-medium">รหัส PIN เริ่มต้น: <strong>1234</strong></p>
+      </div>
+
+      <form onsubmit="verifyPin(event)" class="space-y-4">
+        <div>
+          <input type="password" id="adminPinInput" maxlength="6" placeholder="••••" class="w-full text-center text-2xl font-mono tracking-widest h-12 border-2 border-slate-300 rounded-xl focus:border-hospital-500 focus:outline-none focus:ring-4 focus:ring-hospital-500/10" autocomplete="off" required>
+        </div>
+        <button type="submit" class="w-full py-3 bg-hospital-600 hover:bg-hospital-700 text-white font-semibold rounded-xl text-sm transition shadow-lg shadow-hospital-500/20">
+          ปลดล็อกเข้าใช้งาน
+        </button>
+      </form>
+
+      <div class="pt-2 border-t border-slate-100">
+        <a href="index.html" class="text-xs text-slate-500 hover:text-slate-800 inline-flex items-center gap-1">
+          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> กลับไปยังหน้าแจ้งซ่อม (หน้าบ้าน)
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: อัปเดตสถานะช่าง -->
+  <!-- ============================================== -->
+  <div id="statusModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
+      <div class="bg-gradient-to-r from-hospital-800 to-hospital-900 text-white px-5 py-4 flex items-center justify-between">
+        <h4 class="font-display font-semibold text-sm flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-4 h-4 text-sky-300"></i>
+          อัปเดตสถานะเคส <span id="modalTicketId" class="text-sky-200 font-mono"></span>
+        </h4>
+        <button onclick="closeStatusModal()" class="text-white/70 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Case summary snippet -->
+      <div id="modalCaseBrief" class="px-5 py-3 bg-slate-50 border-b border-slate-200/80 text-xs text-slate-700"></div>
+
+      <form id="statusUpdateForm" onsubmit="saveStatusUpdate(event)" class="p-5 space-y-4">
+        <input type="hidden" id="modalOrderId">
+        
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะการทำงาน</label>
+          <select id="modalStatus" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500">
+            <option value="รอดำเนินการ">🟡 รอดำเนินการ (รอช่างรับเรื่อง)</option>
+            <option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ (ช่างเข้าตรวจสอบแล้ว)</option>
+            <option value="รออะไหล่/ส่งซ่อมภายนอก">🟠 รออะไหล่ / ส่งซ่อมภายนอก</option>
+            <option value="ซ่อมเสร็จสิ้น">🟢 ซ่อมเสร็จสิ้น (พร้อมใช้งาน)</option>
+            <option value="ยกเลิก/ส่งคืน">⚪ ยกเลิก / ซ่อมไม่ได้ / ส่งคืน</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อช่างผู้รับผิดชอบ</label>
+          <input type="text" id="modalTechnician" placeholder="เช่น นายสมศักดิ์ (ช่างเครื่องมือแพทย์)" class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">บันทึกผลการซ่อม / หมายเหตุช่าง</label>
+          <textarea id="modalNotes" rows="3" placeholder="ระบุการแก้ไข เช่น เปลี่ยนอะไหล่, ซ่อมบอร์ด, ปรับเทียบแล้ว..." class="w-full text-xs border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500"></textarea>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeStatusModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+            ยกเลิก
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-hospital-600 hover:bg-hospital-700 transition flex items-center gap-1.5 shadow">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            บันทึกการอัปเดต
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL: ตั้งค่า API / Webhook -->
+  <!-- ============================================== -->
+  <div id="configModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-hospital-900 text-white px-5 py-4 flex items-center justify-between">
+        <h4 class="font-display font-semibold text-sm flex items-center gap-2">
+          <i data-lucide="database" class="w-4 h-4 text-teal-300"></i>
+          เชื่อมต่อ Backend API / Google Sheets
+        </h4>
+        <button onclick="toggleConfigModal()" class="text-white/70 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3 text-xs text-slate-600">
+        <p>ระบุ Webhook URL ของ <strong>Google Apps Script</strong> หรือ PHP REST API เพื่อซิงค์ข้อมูลกับฐานข้อมูลส่วนกลาง</p>
+        
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Backend Webhook URL:</label>
+          <input type="url" id="apiEndpointInput" placeholder="https://script.google.com/macros/s/AKfycbx.../exec" class="w-full text-xs font-mono border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500">
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+          <button type="button" onclick="toggleConfigModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+            ปิด
+          </button>
+          <button type="button" onclick="saveApiEndpoint()" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-hospital-600 hover:bg-hospital-700 transition">
+            บันทึก
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 text-xs py-4 border-t border-slate-800 mt-12">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div>
+        <span class="font-medium text-slate-300">ระบบบริหารงานซ่อมบำรุงโรงพยาบาล (Hospital Maintenance System)</span>
+      </div>
+      <div class="text-[11px] text-slate-500">
+        สำหรับช่างซ่อมบำรุงและผู้ดูแลระบบ · HA Compliant
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="frontend/js/api.js"></script>
+  <script src="frontend/js/admin.js"></script>
+</body>
+</html>

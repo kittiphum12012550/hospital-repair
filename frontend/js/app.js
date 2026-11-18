@@ -1,7 +1,7 @@
 /**
  * ==========================================================================
- * Hospital Maintenance System - Frontend Application Logic (app.js)
- * Controls DOM, Form Validation, Image Preview, SweetAlert2 Alerts, & UI Tabs
+ * Hospital Maintenance System - Frontend User Application Logic (app.js)
+ * For General Hospital Staff / Nurses: Submit Repair Tickets & Track Status
  * ==========================================================================
  */
 
@@ -11,7 +11,7 @@ let currentImageBase64 = null;
 document.addEventListener('DOMContentLoaded', () => {
   lucide.createIcons();
   initDateDisplay();
-  refreshAllViews();
+  loadTrackingList();
 
   // Load API Endpoint in Config Modal
   const currentEndpoint = ApiService.getEndpoint();
@@ -28,19 +28,13 @@ function initDateDisplay() {
   if (el) el.innerText = now.toLocaleDateString('th-TH', options);
 }
 
-// Refresh Views
-async function refreshAllViews() {
-  const orders = await ApiService.getAllOrders();
-  renderTrackingList(orders);
-  renderAdminTable(orders);
-  updateDashboardStats(orders);
-}
-
-// Tab Switching
+// Tab Switching (Between Form and Track Status only)
 function switchTab(tabName) {
-  ['form', 'track', 'admin'].forEach(tab => {
+  ['form', 'track'].forEach(tab => {
     const section = document.getElementById(`tab-${tab}`);
     const btn = document.getElementById(`tabBtn-${tab}`);
+    if (!section || !btn) return;
+
     if (tab === tabName) {
       section.classList.remove('hidden');
       btn.className = "flex-1 py-3 text-center text-sm font-medium border-b-2 border-white text-white flex items-center justify-center gap-2 transition";
@@ -202,7 +196,7 @@ async function handleFormSubmit(event) {
     form.reset();
     removeImage();
     document.getElementById('urgency').classList.add('has-value');
-    await refreshAllViews();
+    await loadTrackingList();
 
   } catch (err) {
     Swal.fire({
@@ -221,11 +215,11 @@ async function handleFormSubmit(event) {
 
 // Helpers: Badges & Timeline
 function getUrgencyBadge(urgency) {
-  if (urgency.includes('ฉุกเฉิน')) {
+  if (urgency && urgency.includes('ฉุกเฉิน')) {
     return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 border border-rose-300 animate-critical"><i data-lucide="alert-triangle" class="w-3 h-3"></i> ฉุกเฉินวิกฤต</span>`;
-  } else if (urgency.includes('ด่วนมาก')) {
+  } else if (urgency && urgency.includes('ด่วนมาก')) {
     return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">ด่วนมาก</span>`;
-  } else if (urgency.includes('ด่วน')) {
+  } else if (urgency && urgency.includes('ด่วน')) {
     return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">ด่วน</span>`;
   }
   return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-normal bg-slate-100 text-slate-600">ปกติ</span>`;
@@ -278,6 +272,12 @@ function renderTimeline(order) {
   `;
 }
 
+// Load Tracking List
+async function loadTrackingList() {
+  const orders = await ApiService.getAllOrders();
+  renderTrackingList(orders);
+}
+
 // Render Tracking List
 function renderTrackingList(orders) {
   const container = document.getElementById('ordersList');
@@ -286,11 +286,11 @@ function renderTrackingList(orders) {
 
   if (!orders || orders.length === 0) {
     container.innerHTML = '';
-    emptyState.classList.remove('hidden');
+    if (emptyState) emptyState.classList.remove('hidden');
     return;
   }
 
-  emptyState.classList.add('hidden');
+  if (emptyState) emptyState.classList.add('hidden');
   container.innerHTML = orders.map(order => `
     <div class="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-sm hover:border-slate-300 transition space-y-3">
       <div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-100 pb-3">
@@ -364,7 +364,8 @@ async function searchRepairOrders() {
     (o.requesterName && o.requesterName.toLowerCase().includes(q)) ||
     (o.contactPhone && o.contactPhone.toLowerCase().includes(q)) ||
     (o.department && o.department.toLowerCase().includes(q)) ||
-    (o.assetId && o.assetId.toLowerCase().includes(q))
+    (o.assetId && o.assetId.toLowerCase().includes(q)) ||
+    (o.symptom && o.symptom.toLowerCase().includes(q))
   );
   renderTrackingList(filtered);
 }
@@ -387,177 +388,6 @@ async function viewPhoto(orderId) {
       confirmButtonText: 'ปิด'
     });
   }
-}
-
-// Admin Table
-function renderAdminTable(orders) {
-  const tbody = document.getElementById('adminTableBody');
-  if (!tbody) return;
-
-  if (!orders || orders.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">ยังไม่มีข้อมูลงานซ่อม</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = orders.map(order => `
-    <tr class="hover:bg-slate-50/80 transition">
-      <td class="py-3 px-3">
-        <span class="font-mono font-bold text-hospital-800">${order.id}</span>
-        <div class="text-[10px] text-slate-400">${order.timestamp}</div>
-      </td>
-      <td class="py-3 px-3">
-        <div class="font-medium text-slate-800">${order.department}</div>
-        <div class="text-[11px] text-slate-500">${order.location}</div>
-      </td>
-      <td class="py-3 px-3 max-w-[200px]">
-        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${order.category}</span>
-        <div class="text-xs text-slate-600 truncate mt-0.5" title="${order.symptom}">${order.symptom}</div>
-      </td>
-      <td class="py-3 px-3">
-        ${getUrgencyBadge(order.urgency)}
-      </td>
-      <td class="py-3 px-3">
-        <div class="text-slate-800 font-medium">${order.requesterName}</div>
-        <div class="text-[11px] text-slate-500">${order.contactPhone}</div>
-      </td>
-      <td class="py-3 px-3">
-        ${getStatusBadge(order.status)}
-      </td>
-      <td class="py-3 px-3 text-center">
-        <button onclick="openStatusModal('${order.id}')" class="px-2.5 py-1.5 rounded-lg bg-hospital-50 hover:bg-hospital-100 text-hospital-700 text-xs font-semibold inline-flex items-center gap-1 transition">
-          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
-          อัปเดต
-        </button>
-      </td>
-    </tr>
-  `).join('');
-
-  lucide.createIcons();
-}
-
-function updateDashboardStats(orders) {
-  const total = orders.length;
-  const pending = orders.filter(o => o.status === 'รอดำเนินการ').length;
-  const progress = orders.filter(o => o.status === 'กำลังดำเนินการ' || o.status.includes('รออะไหล่')).length;
-  const completed = orders.filter(o => o.status === 'ซ่อมเสร็จสิ้น').length;
-
-  const tEl = document.getElementById('stat-total');
-  const pEl = document.getElementById('stat-pending');
-  const prEl = document.getElementById('stat-progress');
-  const cEl = document.getElementById('stat-completed');
-
-  if (tEl) tEl.innerText = total;
-  if (pEl) pEl.innerText = pending;
-  if (prEl) prEl.innerText = progress;
-  if (cEl) cEl.innerText = completed;
-}
-
-// Modal Handling
-async function openStatusModal(orderId) {
-  const all = await ApiService.getAllOrders();
-  const order = all.find(o => o.id === orderId);
-  if (!order) return;
-
-  document.getElementById('modalOrderId').value = order.id;
-  document.getElementById('modalTicketId').innerText = order.id;
-  document.getElementById('modalStatus').value = order.status;
-  document.getElementById('modalTechnician').value = order.technician || '';
-  document.getElementById('modalNotes').value = order.technicianNotes || '';
-
-  document.getElementById('statusModal').classList.remove('hidden');
-  lucide.createIcons();
-}
-
-function closeStatusModal() {
-  document.getElementById('statusModal').classList.add('hidden');
-}
-
-async function saveStatusUpdate(event) {
-  event.preventDefault();
-  const id = document.getElementById('modalOrderId').value;
-  const status = document.getElementById('modalStatus').value;
-  const technician = document.getElementById('modalTechnician').value.trim();
-  const notes = document.getElementById('modalNotes').value.trim();
-
-  try {
-    await ApiService.updateOrderStatus(id, {
-      status: status,
-      technician: technician,
-      technicianNotes: notes
-    });
-
-    closeStatusModal();
-    await refreshAllViews();
-
-    Swal.fire({
-      icon: 'success',
-      title: 'อัปเดตสถานะสำเร็จ',
-      text: `ใบงาน ${id} อัปเดตเป็น: ${status}`,
-      timer: 1500,
-      showConfirmButton: false
-    });
-  } catch (err) {
-    Swal.fire({
-      icon: 'error',
-      title: 'เกิดข้อผิดพลาด',
-      text: err.message
-    });
-  }
-}
-
-// CSV Export
-async function exportToCSV() {
-  const orders = await ApiService.getAllOrders();
-  if (orders.length === 0) {
-    Swal.fire({ icon: 'info', title: 'ไม่มีข้อมูลให้ส่งออก', confirmButtonColor: '#0284C7' });
-    return;
-  }
-
-  const headers = ['รหัสใบงาน', 'วันเวลาแจ้ง', 'หมวดหมู่', 'แผนก', 'สถานที่', 'เลขครุภัณฑ์', 'ความเร่งด่วน', 'อาการเสีย', 'ผู้แจ้ง', 'เบอร์ติดต่อ', 'สถานะ', 'ช่างผู้รับผิดชอบ', 'บันทึกการซ่อม'];
-  const rows = orders.map(o => [
-    `"${o.id}"`,
-    `"${o.timestamp}"`,
-    `"${o.category}"`,
-    `"${o.department}"`,
-    `"${o.location}"`,
-    `"${o.assetId || ''}"`,
-    `"${o.urgency}"`,
-    `"${(o.symptom || '').replace(/"/g, '""')}"`,
-    `"${o.requesterName}"`,
-    `"${o.contactPhone}"`,
-    `"${o.status}"`,
-    `"${o.technician || ''}"`,
-    `"${(o.technicianNotes || '').replace(/"/g, '""')}"`
-  ]);
-
-  const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.setAttribute('href', url);
-  link.setAttribute('download', `Hospital_Maintenance_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-// Reset Samples
-function resetSampleData() {
-  Swal.fire({
-    title: 'โหลดข้อมูลตัวอย่างโรงพยาบาล?',
-    text: 'ระบบจะแทนที่ด้วยข้อมูลทดสอบสำหรับ รพ. 3 รายการ',
-    icon: 'question',
-    showCancelButton: true,
-    confirmButtonText: 'ตกลง',
-    cancelButtonText: 'ยกเลิก',
-    confirmButtonColor: '#0284C7'
-  }).then(async (res) => {
-    if (res.isConfirmed) {
-      ApiService.resetSamples();
-      await refreshAllViews();
-      Swal.fire({ icon: 'success', title: 'โหลดข้อมูลสำเร็จ', timer: 1200, showConfirmButton: false });
-    }
-  });
 }
 
 // Settings Modal

@@ -67,19 +67,21 @@
         </div>
       </div>
       
-      <!-- Live Status Badge & Settings -->
+      <!-- Link to Admin Portal & Settings -->
       <div class="flex items-center space-x-2">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          ระบบพร้อมใช้งาน
-        </span>
-        <button onclick="toggleConfigModal()" title="ตั้งค่าการเชื่อมต่อ API / Google Sheets" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/90 transition text-sm">
+        <a href="admin.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white/10 hover:bg-white/20 text-white border border-white/20 transition shadow-sm">
+          <i data-lucide="shield-check" class="w-4 h-4 text-teal-300"></i>
+          <span class="hidden sm:inline">สำหรับช่าง/แอดมิน</span>
+          <span class="sm:hidden">ช่าง</span>
+        </a>
+
+        <button onclick="toggleConfigModal()" title="ตั้งค่าการเชื่อมต่อ API" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/90 transition text-sm">
           <i data-lucide="settings" class="w-4 h-4"></i>
         </button>
       </div>
     </div>
 
-    <!-- NAVIGATION TABS -->
+    <!-- NAVIGATION TABS (หน้าบ้านมีเฉพาะ แจ้งซ่อมใหม่ และ ติดตามสถานะ) -->
     <div class="max-w-4xl mx-auto px-4 flex border-t border-white/10">
       <button onclick="switchTab('form')" id="tabBtn-form" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-white text-white flex items-center justify-center gap-2 transition">
         <i data-lucide="file-plus-2" class="w-4 h-4"></i>
@@ -87,11 +89,7 @@
       </button>
       <button onclick="switchTab('track')" id="tabBtn-track" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-transparent text-sky-200 hover:text-white flex items-center justify-center gap-2 transition">
         <i data-lucide="search-check" class="w-4 h-4"></i>
-        <span>ติดตามสถานะ</span>
-      </button>
-      <button onclick="switchTab('admin')" id="tabBtn-admin" class="flex-1 py-3 text-center text-sm font-medium border-b-2 border-transparent text-sky-200 hover:text-white flex items-center justify-center gap-2 transition">
-        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-        <span>กระดานช่าง / แอดมิน</span>
+        <span>ค้นหาและติดตามสถานะงาน</span>
       </button>
     </div>
   </header>
@@ -112,7 +110,7 @@
         <div class="text-sm">
           <h2 class="font-display font-semibold text-hospital-900">คำแนะนำการแจ้งซ่อมในโรงพยาบาล</h2>
           <p class="text-slate-600 text-xs mt-0.5">
-            หากเป็นกรณี <span class="text-rose-600 font-semibold">ฉุกเฉินวิกฤต (กระทบต่อชีวิตผู้ป่วย / ห้องฉุกเฉิน / ห้องผ่าตัด)</span> กรุณากดเลือกความเร่งด่วนระดับ "ฉุกเฉินวิกฤต" หรือโทรแจ้งศูนย์ซ่อมบำรุงด่วนทันที โทรภายใน: <strong class="text-slate-800">1100, 1109</strong>
+            หากเป็นกรณี <span class="text-rose-600 font-semibold">ฉุกเฉินวิกฤต (กระทบต่อชีวิตผู้ป่วย / ห้องฉุกเฉิน / ห้องผ่าตัด)</span> กรุณากดเลือกระดับ "ฉุกเฉินวิกฤต" หรือโทรแจ้งศูนย์ซ่อมบำรุงด่วนทันที โทรภายใน: <strong class="text-slate-800">1100, 1109</strong>
           </p>
         </div>
       </div>
@@ -125,7 +123,7 @@
               <i data-lucide="clipboard-pen-line" class="w-5 h-5 text-hospital-500"></i>
               แบบฟอร์มแจ้งซ่อมบำรุง
             </h2>
-            <p class="text-xs text-slate-500 mt-1">กรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการประสานงานและจัดช่างเข้าหน้างาน</p>
+            <p class="text-xs text-slate-500 mt-1">กรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการจัดช่างเข้าหน้างาน</p>
           </div>
           <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-mono">
             <span id="currentDateDisplay">--/--/----</span>
@@ -188,8 +186,6 @@
 
           <!-- Department & Location Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            
-            <!-- Department Selection with Floating Label -->
             <div class="floating-group">
               <select id="department" name="department" required class="floating-select" onchange="this.classList.toggle('has-value', this.value !== '')">
                 <option value="" disabled selected></option>
@@ -215,7 +211,6 @@
               </div>
             </div>
 
-            <!-- Specific Location / Room -->
             <div class="floating-group">
               <input type="text" id="location" name="location" placeholder=" " required class="floating-input" autocomplete="off">
               <label for="location" class="floating-label">จุดที่ตั้ง / ห้อง / เลขเตียง / ชั้น <span class="text-rose-500">*</span></label>
@@ -224,13 +219,11 @@
 
           <!-- Equipment Code & Urgency -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <!-- Asset No / Equipment Name -->
             <div class="floating-group">
               <input type="text" id="assetId" name="assetId" placeholder=" " class="floating-input" autocomplete="off">
               <label for="assetId" class="floating-label">ชื่ออุปกรณ์ / เลขครุภัณฑ์ (ถ้ามี เช่น MED-059)</label>
             </div>
 
-            <!-- Priority / Urgency Level -->
             <div class="floating-group">
               <select id="urgency" name="urgency" required class="floating-select has-value" onchange="this.classList.toggle('has-value', this.value !== '')">
                 <option value="ปกติ (ภายใน 48 ชม.)" selected>🟢 ปกติ (งานทั่วไป ไม่กระทบคนไข้ / ภายใน 48 ชม.)</option>
@@ -316,7 +309,7 @@
     </section>
 
     <!-- ============================================== -->
-    <!-- TAB 2: ติดตามสถานะงาน -->
+    <!-- TAB 2: ติดตามสถานะงาน (สำหรับหน้าบ้าน) -->
     <!-- ============================================== -->
     <section id="tab-track" class="hidden space-y-6">
       
@@ -357,149 +350,7 @@
 
     </section>
 
-    <!-- ============================================== -->
-    <!-- TAB 3: กระดานช่าง / แอดมิน (Technician Dashboard) -->
-    <!-- ============================================== -->
-    <section id="tab-admin" class="hidden space-y-6">
-      
-      <!-- Stats Summary -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 rounded-lg bg-sky-100 text-sky-600">
-            <i data-lucide="clipboard-list" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs text-slate-500 font-medium">งานทั้งหมด</div>
-            <div class="text-xl font-bold text-slate-800" id="stat-total">0</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 rounded-lg bg-amber-100 text-amber-600">
-            <i data-lucide="clock" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs text-slate-500 font-medium">รอดำเนินการ</div>
-            <div class="text-xl font-bold text-amber-600" id="stat-pending">0</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 rounded-lg bg-indigo-100 text-indigo-600">
-            <i data-lucide="wrench" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs text-slate-500 font-medium">กำลังซ่อม/รออะไหล่</div>
-            <div class="text-xl font-bold text-indigo-600" id="stat-progress">0</div>
-          </div>
-        </div>
-
-        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-sm flex items-center gap-3">
-          <div class="p-2.5 rounded-lg bg-emerald-100 text-emerald-600">
-            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
-          </div>
-          <div>
-            <div class="text-xs text-slate-500 font-medium">ซ่อมเสร็จสิ้น</div>
-            <div class="text-xl font-bold text-emerald-600" id="stat-completed">0</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Admin Filter & Action Bar -->
-      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-          <div>
-            <h3 class="font-display font-bold text-slate-800 text-base flex items-center gap-2">
-              <i data-lucide="sliders" class="w-4 h-4 text-hospital-500"></i>
-              การจัดการงานซ่อมบำรุง (สำหรับช่าง/ผู้ดูแล)
-            </h3>
-            <p class="text-xs text-slate-500">อัปเดตสถานะงาน ลงบันทึกการซ่อม และส่งมอบงาน</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="exportToCSV()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
-              <i data-lucide="download" class="w-3.5 h-3.5"></i>
-              ส่งออก Excel / CSV
-            </button>
-            <button onclick="resetSampleData()" class="px-3 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-100 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              เติมข้อมูลตัวอย่าง รพ.
-            </button>
-          </div>
-        </div>
-
-        <!-- Table of tickets -->
-        <div class="overflow-x-auto mt-4">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="bg-slate-50 text-slate-600 uppercase font-semibold border-b border-slate-200">
-                <th class="py-3 px-3">เลขใบงาน / เวลา</th>
-                <th class="py-3 px-3">แผนก / สถานที่</th>
-                <th class="py-3 px-3">หมวดหมู่ / อาการเสีย</th>
-                <th class="py-3 px-3">ความเร่งด่วน</th>
-                <th class="py-3 px-3">ผู้แจ้ง</th>
-                <th class="py-3 px-3">สถานะ</th>
-                <th class="py-3 px-3 text-center">จัดการ</th>
-              </tr>
-            </thead>
-            <tbody id="adminTableBody" class="divide-y divide-slate-100"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </section>
-
   </main>
-
-  <!-- ============================================== -->
-  <!-- MODAL: อัปเดตสถานะช่าง -->
-  <!-- ============================================== -->
-  <div id="statusModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden transform transition-all">
-      <div class="bg-gradient-to-r from-hospital-800 to-hospital-900 text-white px-5 py-4 flex items-center justify-between">
-        <h4 class="font-display font-semibold text-sm flex items-center gap-2">
-          <i data-lucide="edit-3" class="w-4 h-4 text-sky-300"></i>
-          อัปเดตสถานะงานซ่อม <span id="modalTicketId" class="text-sky-200 font-mono"></span>
-        </h4>
-        <button onclick="closeStatusModal()" class="text-white/70 hover:text-white">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-      <form id="statusUpdateForm" onsubmit="saveStatusUpdate(event)" class="p-5 space-y-4">
-        <input type="hidden" id="modalOrderId">
-        
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">สถานะการทำงาน</label>
-          <select id="modalStatus" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500">
-            <option value="รอดำเนินการ">🟡 รอดำเนินการ (รอช่างรับเรื่อง)</option>
-            <option value="กำลังดำเนินการ">🔵 กำลังดำเนินการ (ช่างเข้าตรวจสอบแล้ว)</option>
-            <option value="รออะไหล่/ส่งซ่อมภายนอก">🟠 รออะไหล่ / ส่งซ่อมภายนอก</option>
-            <option value="ซ่อมเสร็จสิ้น">🟢 ซ่อมเสร็จสิ้น (พร้อมใช้งาน)</option>
-            <option value="ยกเลิก/ส่งคืน">⚪ ยกเลิก / ซ่อมไม่ได้ / ส่งคืน</option>
-          </select>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อช่างผู้รับผิดชอบ</label>
-          <input type="text" id="modalTechnician" placeholder="เช่น นายสมศักดิ์ ช่างเครื่องมือแพทย์" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500">
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">บันทึกผลการซ่อม / หมายเหตุช่าง</label>
-          <textarea id="modalNotes" rows="3" placeholder="ระบุการแก้ไข เช่น เปลี่ยนอะไหล่, ซ่อมบอร์ด, ปรับเทียบแล้ว..." class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-hospital-500"></textarea>
-        </div>
-
-        <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" onclick="closeStatusModal()" class="px-4 py-2 rounded-xl text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
-            ยกเลิก
-          </button>
-          <button type="submit" class="px-5 py-2 rounded-xl text-xs font-semibold text-white bg-hospital-600 hover:bg-hospital-700 transition flex items-center gap-1.5 shadow">
-            <i data-lucide="check" class="w-4 h-4"></i>
-            บันทึกการอัปเดต
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- ============================================== -->
   <!-- MODAL: ตั้งค่า API / Google Sheets Webhook -->
@@ -543,8 +394,10 @@
         <p class="font-medium text-slate-300">ระบบติดตามงานซ่อมบำรุงโรงพยาบาล (Hospital Maintenance System)</p>
         <p class="text-[11px] text-slate-500 mt-0.5">ออกแบบเพื่อรองรับมาตรฐาน HA, ว่องไว, ตรวจสอบย้อนหลังได้ 100%</p>
       </div>
-      <div class="text-[11px] text-slate-500">
-        © 2026 ฝ่ายบริหารทั่วไปและงานเทคนิคการแพทย์
+      <div class="flex items-center gap-3">
+        <a href="admin.html" class="text-sky-300 hover:text-white underline text-[11px]">เข้าสู่ระบบช่าง/แอดมิน</a>
+        <span class="text-slate-600">|</span>
+        <span class="text-[11px] text-slate-500">© 2026 ฝ่ายบริหารทั่วไปและงานเทคนิคการแพทย์</span>
       </div>
     </div>
   </footer>
