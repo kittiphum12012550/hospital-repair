@@ -34,12 +34,12 @@ CREATE TABLE IF NOT EXISTS repair_tickets (
     location_detail VARCHAR(255) NOT NULL,          -- จุดที่ตั้ง ห้อง เลขเตียง ชั้น
     asset_id VARCHAR(100) DEFAULT NULL,             -- รหัสครุภัณฑ์ รพ.
     asset_name VARCHAR(255) DEFAULT NULL,           -- ชื่อครุภัณฑ์/อุปกรณ์
-    urgency_level ENUM('normal', 'urgent', 'very_urgent', 'emergency') DEFAULT 'normal',
+    urgency_level VARCHAR(50) DEFAULT 'ปกติ (ภายใน 48 ชม.)',
     symptom TEXT NOT NULL,                          -- รายละเอียดอาการเสีย
-    image_url VARCHAR(500) DEFAULT NULL,            -- ลิงก์รูปภาพแนบ
+    image_url LONGTEXT DEFAULT NULL,                -- ลิงก์รูปภาพ หรือ Base64
     requester_name VARCHAR(120) NOT NULL,           -- ชื่อผู้แจ้ง
     contact_phone VARCHAR(60) NOT NULL,             -- เบอร์โทร/เบอร์ต่อภายใน
-    status ENUM('pending', 'in_progress', 'waiting_parts', 'completed', 'cancelled') DEFAULT 'pending',
+    status VARCHAR(50) DEFAULT 'รอดำเนินการ',
     technician_name VARCHAR(120) DEFAULT NULL,      -- ช่างผู้รับผิดชอบ
     technician_notes TEXT DEFAULT NULL,             -- บันทึกการแก้ไข
     completed_at DATETIME DEFAULT NULL,             -- วันที่ดำเนินการแล้วเสร็จ
@@ -47,20 +47,7 @@ CREATE TABLE IF NOT EXISTS repair_tickets (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_ticket_no (ticket_no),
     INDEX idx_status (status),
-    INDEX idx_urgency (urgency_level),
     INDEX idx_created (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 4. ตารางบันทึกประวัติการเปลี่ยนสถานะงาน (Audit Log / Timeline History)
-CREATE TABLE IF NOT EXISTS repair_status_logs (
-    log_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    ticket_no VARCHAR(35) NOT NULL,
-    old_status VARCHAR(50),
-    new_status VARCHAR(50) NOT NULL,
-    action_by VARCHAR(120) NOT NULL,                -- ผู้ทำรายการ (ช่าง/แอดมิน)
-    action_notes TEXT,
-    logged_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (ticket_no) REFERENCES repair_tickets(ticket_no) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------

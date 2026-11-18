@@ -8,7 +8,7 @@
 // 1. ตั้งค่าพื้นฐาน (Configuration)
 const CONFIG = {
   SHEET_NAME: 'รายการแจ้งซ่อม',
-  LINE_NOTIFY_TOKEN: '', // ใส่ LINE Notify Token ของกลุ่มช่างซ่อมบำรุงที่นี่ (หากต้องการแจ้งเตือนเข้าไลน์)
+  LINE_NOTIFY_TOKEN: '', // ใส่ LINE Notify Token ของกลุ่มช่างซ่อมบำรุงที่นี่
   TIMEZONE: 'GMT+7'
 };
 
@@ -18,7 +18,6 @@ const CONFIG = {
 function doPost(e) {
   try {
     const lock = LockService.getScriptLock();
-    // รอ lock สูงสุด 10 วินาที ป้องกันข้อมูลชนกันเมื่อมีการส่งพร้อมกัน
     lock.waitLock(10000);
 
     let data;
@@ -54,7 +53,6 @@ function doPost(e) {
       ];
       sheet.appendRow(headers);
       
-      // จัดรูปแบบ Header
       const headerRange = sheet.getRange(1, 1, 1, headers.length);
       headerRange.setBackground('#075985')
                  .setFontColor('#FFFFFF')
@@ -78,7 +76,7 @@ function doPost(e) {
     const technician = data.technician || '';
     const technicianNotes = data.technicianNotes || '';
     
-    // จัดการรูปภาพ (ถ้ามี Base64 สามารถบันทึกลง Google Drive หรือเก็บเป็น Link)
+    // บันทึกรูปลง Drive ถ้ามี
     let imageUrl = '-';
     if (data.image && data.image.startsWith('data:image')) {
       try {
@@ -88,7 +86,24 @@ function doPost(e) {
       }
     }
 
-    // บันทึกต่อท้ายแถวอัตโนมัติ (Auto-append)
+    // ตรวจสอบว่าเป็นคำสั่ง Update งานหรือไม่
+    if (data.action === 'update' && data.id) {
+      const rows = sheet.getDataRange().getValues();
+      let updated = false;
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][1] === data.id) {
+          if (data.status) sheet.getRange(i + 1, 11).setValue(data.status);
+          if (data.technician) sheet.getRange(i + 1, 12).setValue(data.technician);
+          if (data.technicianNotes) sheet.getRange(i + 1, 13).setValue(data.technicianNotes);
+          updated = true;
+          break;
+        }
+      }
+      lock.releaseLock();
+      return responseJSON({ status: 'success', message: 'Update success', updated: updated });
+    }
+
+    // ถ้าเป็น New Ticket ให้ appendRow
     sheet.appendRow([
       timestamp,
       ticketId,
@@ -106,10 +121,9 @@ function doPost(e) {
       imageUrl
     ]);
 
-    // ปลด Lock
     lock.releaseLock();
 
-    // ส่งแจ้งเตือนเข้ากลุ่ม LINE Notify ของช่าง/ทีม รพ.
+    // ส่งแจ้งเตือน LINE Notify
     if (CONFIG.LINE_NOTIFY_TOKEN) {
       sendLineNotify({
         ticketId: ticketId,
@@ -141,7 +155,7 @@ function doPost(e) {
 }
 
 /**
- * doGet: รองรับการค้นหางาน และดึงข้อมูลสถานะใบงานไปแสดงที่หน้าเว็บ
+ * doGet: ค้นหาและดึงข้อมูลไปแสดงที่หน้าเว็บ
  */
 function doGet(e) {
   try {
@@ -158,9 +172,7 @@ function doGet(e) {
       return responseJSON({ status: 'success', data: [] });
     }
 
-    const headers = rows[0];
     const rawData = rows.slice(1);
-
     const orders = rawData.map(r => ({
       timestamp: r[0],
       id: r[1],
@@ -189,7 +201,6 @@ function doGet(e) {
       return responseJSON({ status: 'success', data: filtered });
     }
 
-    // Default: ส่งคืนรายการทั้งหมด เรียงจากใหม่ไปเก่า
     return responseJSON({ status: 'success', data: orders.reverse() });
 
   } catch (error) {
@@ -197,13 +208,10 @@ function doGet(e) {
   }
 }
 
-/**
- * สร้างรหัสใบงาน รพ. อัตโนมัติ (Hospital Work Order ID Generator)
- */
 function generateHospitalTicketId(category) {
   let prefix = 'REQ-MED';
-  if (category && category.includes('อาคาร')) prefix = 'REQ-FAC';
-  else if (category && category.includes('IT')) prefix = 'REQ-IT';
+  if (category && (category.includes('อาคาร') || category.includes('กายภาพ'))) prefix = 'REQ-FAC';
+  else if (category && (category.includes('IT') || category.includes('คอมพิวเตอร์'))) prefix = 'REQ-IT';
   else if (category && category.includes('ครุภัณฑ์')) prefix = 'REQ-GEN';
 
   const dateStr = Utilities.formatDate(new Date(), CONFIG.TIMEZONE, 'yyyyMMdd');
@@ -211,9 +219,6 @@ function generateHospitalTicketId(category) {
   return `${prefix}-${dateStr}-${rand}`;
 }
 
-/**
- * ฟังก์ชันบันทึกภาพถ่ายลง Google Drive โฟลเดอร์ "Hospital_Repairs"
- */
 function saveImageToDrive(base64Data, ticketId) {
   const folderName = 'Hospital_Repairs';
   let folder;
@@ -224,7 +229,6 @@ function saveImageToDrive(base64Data, ticketId) {
     folder = DriveApp.createFolder(folderName);
   }
 
-  // แกะ base64
   const contentType = base64Data.substring(5, base64Data.indexOf(';'));
   const bytes = Utilities.base64Decode(base64Data.split(',')[1]);
   const blob = Utilities.newBlob(bytes, contentType, `${ticketId}.jpg`);
@@ -234,9 +238,6 @@ function saveImageToDrive(base64Data, ticketId) {
   return file.getUrl();
 }
 
-/**
- * ฟังก์ชันส่งแจ้งเตือนเข้ากลุ่ม LINE Notify ของช่าง/วิศวกรโรงพยาบาล
- */
 function sendLineNotify(info) {
   if (!CONFIG.LINE_NOTIFY_TOKEN) return;
 
@@ -245,15 +246,15 @@ function sendLineNotify(info) {
   else if (info.urgency.includes('ด่วนมาก')) urgencyIcon = '🔥 [ด่วนมาก]';
   else if (info.urgency.includes('ด่วน')) urgencyIcon = '⚡ [ด่วน]';
 
-  let msg = `\n🔔 มีการแจ้งซ่อมใหม่ (${info.category})\n`;
+  let msg = `\n🔔 แจ้งซ่อมใหม่ (${info.category})\n`;
   msg += `------------------------------\n`;
-  msg += `🎫 รหัสใบงาน: ${info.ticketId}\n`;
+  msg += `🎫 เลขที่: ${info.ticketId}\n`;
   msg += `🏥 แผนก: ${info.department}\n`;
   msg += `📍 สถานที่: ${info.location}\n`;
   if (info.assetId && info.assetId !== '-') msg += `🏷️ ครุภัณฑ์: ${info.assetId}\n`;
   msg += `⚠️ ความเร่งด่วน: ${urgencyIcon} ${info.urgency}\n`;
-  msg += `🔧 อาการเสีย: ${info.symptom}\n`;
-  msg += `👤 ผู้แจ้ง: ${info.requester} (โทร: ${info.phone})\n`;
+  msg += `🔧 อาการ: ${info.symptom}\n`;
+  msg += `👤 ผู้แจ้ง: ${info.requester} (${info.phone})\n`;
   if (info.imageUrl) msg += `📷 ภาพถ่าย: ${info.imageUrl}\n`;
   msg += `------------------------------`;
 
@@ -267,9 +268,6 @@ function sendLineNotify(info) {
   UrlFetchApp.fetch('https://notify-api.line.me/api/notify', payload);
 }
 
-/**
- * Utility: ตอบกลับเป็น JSON
- */
 function responseJSON(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
